@@ -1,0 +1,556 @@
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  X, 
+  Download, 
+  Printer, 
+  Copy,
+  Check
+} from 'lucide-react';
+import { Invoice } from '../types';
+
+interface ThermalInvoicePreviewProps {
+  invoice: Invoice | null;
+  onClose: () => void;
+  onDownload: (invoice: Invoice) => void;
+  onPrint: (invoice: Invoice) => void;
+}
+
+export function ThermalInvoicePreview({ 
+  invoice, 
+  onClose, 
+  onDownload, 
+  onPrint 
+}: ThermalInvoicePreviewProps) {
+  const [copied, setCopied] = useState(false);
+
+  if (!invoice) return null;
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      const invoiceText = generateInvoiceText();
+      await navigator.clipboard.writeText(invoiceText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
+
+  const generateInvoiceText = () => {
+    const lines = [
+      '='.repeat(32),
+      `    ${invoice.shop_name}`,
+      `P.O. Box: ${invoice.shop_po_box || 'N/A'}`,
+      `Address: ${invoice.shop_address || 'N/A'}`,
+      `Phone: ${invoice.shop_phone_number || 'N/A'}`,
+      `KRA PIN: ${invoice.shop_kra_pin || 'N/A'}`,
+      '='.repeat(32),
+      `Invoice: ${invoice.invoice_number}`,
+      `Date: ${formatDate(invoice.created_at)}`,
+      `Customer: ${invoice.customer_name}`,
+      `Phone: ${invoice.customer_phone || 'N/A'}`,
+      `Cashier: ${invoice.created_by_name}`,
+      '-'.repeat(32),
+      'ITEMS:',
+      '-'.repeat(32),
+    ];
+
+    invoice.items.forEach((item) => {
+      lines.push(
+        `${item.product_name}`,
+        `  ${item.quantity} × ${parseFloat(item.unit_price).toFixed(2)} = ${parseFloat(item.total_price).toFixed(2)}`
+      );
+    });
+
+    lines.push(
+      '-'.repeat(32),
+      `Subtotal: ${parseFloat(invoice.subtotal).toFixed(2)}`,
+      `Tax: ${parseFloat(invoice.tax_amount).toFixed(2)}`,
+      `Discount: ${parseFloat(invoice.discount_amount).toFixed(2)}`,
+      '='.repeat(32),
+      `TOTAL: ${parseFloat(invoice.total_amount).toFixed(2)}`,
+      `Paid: ${parseFloat(invoice.amount_paid).toFixed(2)}`,
+      `Change: ${parseFloat(invoice.change_amount).toFixed(2)}`,
+      '='.repeat(32),
+      `Payment: ${invoice.payment_method_display}`,
+      `Status: ${invoice.status_display}`,
+      '',
+      invoice.notes || '',
+      '',
+      'Thank you for your purchase!',
+      '='.repeat(32)
+    );
+
+    return lines.join('\n');
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice ${invoice.invoice_number}</title>
+            <style>
+              @page {
+                size: 80mm 297mm;
+                margin: 0;
+              }
+              
+              @media print {
+                body {
+                  width: 72mm;
+                  max-width: 72mm;
+                  margin: 0;
+                  padding: 4mm;
+                  font-family: monospace;
+                  font-size: 11px;
+                  line-height: 1.3;
+                  transform: none !important;
+                }
+              }
+              
+              body { 
+                font-family: monospace; 
+                font-size: 11px; 
+                margin: 0; 
+                padding: 4mm;
+                width: 72mm;
+                max-width: 72mm;
+                line-height: 1.3;
+                background: white;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+              }
+              
+              .header { 
+                text-align: center; 
+                margin-bottom: 6px; 
+                border-bottom: 1px dashed #000;
+                padding-bottom: 6px;
+              }
+              
+              .header h2 {
+                margin: 0;
+                font-size: 15px;
+                font-weight: bold;
+              }
+              
+              .header p {
+                margin: 2px 0 0 0;
+                font-size: 9px;
+              }
+              
+              .divider { 
+                border-top: 1px dashed #000; 
+                margin: 3px 0; 
+                height: 1px;
+              }
+              
+              .item { 
+                margin: 3px 0; 
+                padding: 2px 0;
+              }
+              
+              .item-name {
+                font-weight: bold;
+                font-size: 10px;
+                margin-bottom: 1px;
+                word-break: break-word;
+              }
+              
+              .item-details {
+                font-size: 9px;
+                text-align: right;
+                margin-top: 1px;
+              }
+              
+              .total { 
+                font-weight: bold; 
+                margin-top: 6px; 
+                border-top: 1px solid #000;
+                padding-top: 3px;
+              }
+              
+              .footer { 
+                text-align: center; 
+                margin-top: 6px; 
+                border-top: 1px dashed #000;
+                padding-top: 6px;
+              }
+              
+              .info-row {
+                display: flex;
+                justify-content: space-between;
+                margin: 2px 0;
+                font-size: 9px;
+                align-items: flex-start;
+              }
+              
+              .info-label {
+                font-weight: bold;
+                flex-shrink: 0;
+                margin-right: 4px;
+              }
+              
+              .info-value {
+                text-align: right;
+                flex: 1;
+                word-break: break-all;
+              }
+              
+              .items-section {
+                margin: 6px 0;
+                border-top: 1px dashed #000;
+                border-bottom: 1px dashed #000;
+                padding: 3px 0;
+              }
+              
+              .items-header {
+                text-align: center;
+                font-weight: bold;
+                font-size: 10px;
+                margin-bottom: 3px;
+              }
+              
+              .summary-section {
+                margin: 6px 0;
+              }
+              
+              .summary-row {
+                display: flex;
+                justify-content: space-between;
+                margin: 1px 0;
+                font-size: 9px;
+                align-items: flex-start;
+              }
+              
+              .summary-row span:first-child {
+                flex-shrink: 0;
+                margin-right: 4px;
+              }
+              
+              .summary-row span:last-child {
+                text-align: right;
+                flex: 1;
+              }
+              
+              .total-row {
+                display: flex;
+                justify-content: space-between;
+                margin: 3px 0;
+                font-size: 11px;
+                font-weight: bold;
+                border-top: 1px solid #000;
+                padding-top: 3px;
+                align-items: flex-start;
+              }
+              
+              .total-row span:first-child {
+                flex-shrink: 0;
+                margin-right: 4px;
+              }
+              
+              .total-row span:last-child {
+                text-align: right;
+                flex: 1;
+              }
+              
+              .payment-info {
+                margin: 6px 0;
+                border-top: 1px dashed #000;
+                padding-top: 3px;
+              }
+              
+              .notes {
+                margin: 6px 0;
+                border-top: 1px dashed #000;
+                padding-top: 3px;
+                font-size: 9px;
+                text-align: center;
+                word-break: break-word;
+              }
+              
+              .notes strong {
+                display: block;
+                margin-bottom: 2px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>${invoice.shop_name}</h2>
+              <p>P.O. Box: ${invoice.shop_po_box || 'N/A'}</p>
+              <p>${invoice.shop_address || 'N/A'}</p>
+              <p>Phone: ${invoice.shop_phone_number || 'N/A'}</p>
+              <p>KRA PIN: ${invoice.shop_kra_pin || 'N/A'}</p>
+            </div>
+            
+            <div class="info-row">
+              <span class="info-label">Invoice:</span>
+              <span class="info-value">${invoice.invoice_number}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Date:</span>
+              <span class="info-value">${formatDate(invoice.created_at)}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Customer:</span>
+              <span class="info-value">${invoice.customer_name}</span>
+            </div>
+            ${invoice.customer_phone ? `<div class="info-row">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">${invoice.customer_phone}</span>
+            </div>` : ''}
+            <div class="info-row">
+              <span class="info-label">Cashier:</span>
+              <span class="info-value">${invoice.created_by_name}</span>
+            </div>
+            
+            <div class="items-section">
+              <div class="items-header">ITEMS</div>
+              ${invoice.items.map(item => `
+                <div class="item">
+                  <div class="item-name">${item.product_name}</div>
+                  <div class="item-details">${item.quantity} × ${parseFloat(item.unit_price).toFixed(2)} = ${parseFloat(item.total_price).toFixed(2)}</div>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="summary-section">
+              <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>${parseFloat(invoice.subtotal).toFixed(2)}</span>
+              </div>
+              <div class="summary-row">
+                <span>Tax:</span>
+                <span>${parseFloat(invoice.tax_amount).toFixed(2)}</span>
+              </div>
+              ${parseFloat(invoice.discount_amount) > 0 ? `<div class="summary-row">
+                <span>Discount:</span>
+                <span>-${parseFloat(invoice.discount_amount).toFixed(2)}</span>
+              </div>` : ''}
+            </div>
+            
+            <div class="total-row">
+              <span>TOTAL:</span>
+              <span>KSh ${parseFloat(invoice.total_amount).toFixed(2)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Paid:</span>
+              <span>KSh ${parseFloat(invoice.amount_paid).toFixed(2)}</span>
+            </div>
+            ${parseFloat(invoice.change_amount) > 0 ? `<div class="summary-row">
+              <span>Change:</span>
+              <span>KSh ${parseFloat(invoice.change_amount).toFixed(2)}</span>
+            </div>` : ''}
+            
+            <div class="payment-info">
+              <div class="summary-row">
+                <span>Payment Method:</span>
+                <span>${invoice.payment_method_display}</span>
+              </div>
+              <div class="summary-row">
+                <span>Status:</span>
+                <span>${invoice.status_display}</span>
+              </div>
+            </div>
+            
+            ${invoice.notes ? `<div class="notes">
+              <strong>Notes:</strong>
+              <div>${invoice.notes}</div>
+            </div>` : ''}
+            
+            <div class="footer">
+              <div style="font-weight: bold; margin-bottom: 3px; font-size: 10px;">Thank You for Shopping with Us!</div>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      
+      // Wait for content to load before printing
+      printWindow.onload = function() {
+        printWindow.print();
+        printWindow.close();
+      };
+      
+      // Fallback if onload doesn't fire
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-lg">Thermal Invoice Preview</CardTitle>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copyToClipboard}
+              className="flex items-center space-x-1"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              <span>{copied ? 'Copied!' : 'Copy'}</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onDownload(invoice)}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePrint}
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="overflow-y-auto max-h-[calc(90vh-120px)]">
+          {/* Thermal Invoice Display */}
+          <div className="bg-white border-2 border-gray-300 rounded-lg p-4 font-mono text-sm">
+            <div className="text-center mb-4">
+              <div className="text-lg font-bold">{invoice.shop_name}</div>
+              <div className="text-xs text-gray-600">P.O. Box: {invoice.shop_po_box || 'N/A'}</div>
+              <div className="text-xs text-gray-600">{invoice.shop_address || 'N/A'}</div>
+              <div className="text-xs text-gray-600">Phone: {invoice.shop_phone_number || 'N/A'}</div>
+              <div className="text-xs text-gray-600">KRA PIN: {invoice.shop_kra_pin || 'N/A'}</div>
+            </div>
+            
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between">
+                <span>Invoice:</span>
+                <span className="font-bold">{invoice.invoice_number}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Date:</span>
+                <span>{formatDate(invoice.created_at)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Customer:</span>
+                <span>{invoice.customer_name}</span>
+              </div>
+              {invoice.customer_phone && (
+                <div className="flex justify-between">
+                  <span>Phone:</span>
+                  <span>{invoice.customer_phone}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Cashier:</span>
+                <span>{invoice.created_by_name}</span>
+              </div>
+            </div>
+            
+            <div className="border-t border-b border-gray-300 py-2 mb-4">
+              <div className="text-center font-bold mb-2">ITEMS</div>
+              {invoice.items.map((item, index) => (
+                <div key={item.id} className="mb-2">
+                  <div className="font-medium">{item.product_name}</div>
+                  <div className="flex justify-between text-sm">
+                    <span>{item.quantity} × {parseFloat(item.unit_price).toFixed(2)}</span>
+                    <span className="font-bold">{parseFloat(item.total_price).toFixed(2)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="space-y-1 mb-4">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>{parseFloat(invoice.subtotal).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax:</span>
+                <span>{parseFloat(invoice.tax_amount).toFixed(2)}</span>
+              </div>
+              {parseFloat(invoice.discount_amount) > 0 && (
+                <div className="flex justify-between">
+                  <span>Discount:</span>
+                  <span>-{parseFloat(invoice.discount_amount).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t-2 border-gray-300 pt-2 mb-4">
+              <div className="flex justify-between text-lg font-bold">
+                <span>TOTAL:</span>
+                <span>KSh {parseFloat(invoice.total_amount).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Paid:</span>
+                <span>KSh {parseFloat(invoice.amount_paid).toFixed(2)}</span>
+              </div>
+              {parseFloat(invoice.change_amount) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Change:</span>
+                  <span>KSh {parseFloat(invoice.change_amount).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-1 mb-4 text-sm">
+              <div className="flex justify-between">
+                <span>Payment Method:</span>
+                <span>{invoice.payment_method_display}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <Badge variant="outline" className="text-xs">
+                  {invoice.status_display}
+                </Badge>
+              </div>
+            </div>
+            
+            {invoice.notes && (
+              <div className="border-t border-gray-300 pt-2 mb-4">
+                <div className="text-sm">
+                  <div className="font-medium mb-1">Notes:</div>
+                  <div className="text-gray-600">{invoice.notes}</div>
+                </div>
+              </div>
+            )}
+            
+            <div className="text-center text-sm">
+              {/* <div className="font-bold mb-1">Get Wel!</div> */}
+              <div className="text-gray-600">Please keep this receipt for your records</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+} 
+

@@ -15,7 +15,8 @@
     "dev:next": "cd app/nextjs-app && npm run dev",
     "build": "npm run build:electron",
     "build:electron": "tsc && electron-builder",
-    "build:win": "npm run build:electron -- --win",
+    "build:win": "npm run build:electron -- --win --dir",
+    "build:win:installer": "npm run build:electron -- --win",
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "npm run build:electron"
@@ -38,7 +39,7 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "dir",
           "arch": [
             "x64"
           ]
