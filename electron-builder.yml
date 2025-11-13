@@ -1,0 +1,24 @@
+# Alternative electron-builder configuration file
+# This file is optional - configuration is also in package.json
+
+appId: com.supapos.pharmacy-suite
+productName: Pharmacy Suite POS
+directories:
+  output: release
+  buildResources: build
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  publisherName: Supapos
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Pharmacy Suite POS
+

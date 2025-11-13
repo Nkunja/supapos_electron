@@ -1,0 +1,72 @@
+{
+  "name": "supapos-electron",
+  "version": "1.0.0",
+  "description": "Supapos POS - Desktop Application",
+  "main": "dist/main.js",
+  "author": "Supapos",
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "npm run build:nextjs && npm run copy:nextjs",
+    "prebuild:win": "npm run build:nextjs && npm run copy:nextjs",
+    "prepack": "npm run build:nextjs && npm run copy:nextjs",
+    "copy:nextjs": "node scripts/copy-nextjs.js",
+    "build:nextjs": "node scripts/build-nextjs.js",
+    "dev": "npm run copy:nextjs && concurrently \"npm run dev:next\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev:next": "cd app/nextjs-app && npm run dev",
+    "build": "npm run build:electron",
+    "build:electron": "tsc && electron-builder",
+    "build:win": "npm run build:electron -- --win",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "npm run build:electron"
+  },
+  "build": {
+    "appId": "com.supapos.pharmacy-suite",
+    "productName": "Supapos POS",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "app/**/*",
+      "package.json",
+      "!app/nextjs-app/.next/cache/**/*",
+      "!app/nextjs-app/.git/**/*",
+      "!app/nextjs-app/node_modules/.cache/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "publisherName": "Supapos",
+      "signAndEditExecutable": false,
+      "signDlls": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Supapos POS"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "^5.0.0",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  }
+}
+

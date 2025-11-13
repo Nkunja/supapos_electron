@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+app/nextjs-app/
+*.log
+.DS_Store
+*.pem
+.env
+.env.local
+build/icon.ico
+build/icon.png
+

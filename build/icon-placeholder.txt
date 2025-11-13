@@ -1,0 +1,11 @@
+Place your application icons here:
+
+- icon.ico (256x256 or larger) - Required for Windows builds
+- icon.png (512x512 or larger) - Optional, for other platforms
+
+You can create icons using tools like:
+- Online: https://www.icoconverter.com/
+- Desktop: GIMP, Photoshop, or similar image editors
+
+For Windows, the .ico file should contain multiple sizes (16x16, 32x32, 48x48, 256x256).
+
